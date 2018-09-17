@@ -131,7 +131,7 @@
       function listMessages() {
         gapi.client.gmail.users.messages.list({
           'userId': 'me',
-          'labelIds': 'INBOX', 
+          'labelIds': 'CATEGORY_PERSONAL',
           'maxResults': 10
           
         }).then(function(response) {
@@ -159,7 +159,7 @@
           'userId': 'me',
           'id': messageId
         }).then(function(response) {
-         //console.log(response.result);
+        // console.log(response.result);
 
           let labelIds = response.result.labelIds;
          //console.log(labelIds.includes("INBOX"));
@@ -210,7 +210,7 @@
         });*/
 
             let parts = response.result.payload.parts;
-            //console.log(response.result.payload);
+           // console.log(response.result.payload.parts);
             getAttachments(parts,messageId);
             //appendPre(response.result.snippet);
           }
@@ -218,7 +218,97 @@
         });
       }
 
-      function getAttachments(parts,messageId) {
+
+function getAttachments(parts,messageId) {
+        if(parts)
+      {       //let partArray = [];
+              for (var i = 0; i < parts.length; i++) {  
+                var part = parts[i];
+               if (part.filename && part.filename.length > 0) {
+                    //partArray[i] = part;
+                    //var attachId = part.body.attachmentId;
+                     // console.log(part.mimeType);
+                      
+
+                      let dlnk = document.createElement("a");                        
+                      let t = document.createTextNode(part.filename);
+                      dlnk.appendChild(t);
+
+                      let dataMessageId = document.createAttribute("data-messageId");
+                      dataMessageId.value = messageId ;
+                      dlnk.setAttributeNode(dataMessageId);
+
+                      let dataMimeType = document.createAttribute("data-mimeType");
+                      dataMimeType.value = part.mimeType ;
+                      dlnk.setAttributeNode(dataMimeType);
+
+                      let dataFileName = document.createAttribute("data-fileName");
+                      dataFileName.value = part.filename;
+                      dlnk.setAttributeNode(dataFileName);
+
+                      let dataAttachmentId = document.createAttribute("data-attachmentId");
+                      dataAttachmentId.value = part.body.attachmentId;
+                      dlnk.setAttributeNode(dataAttachmentId);
+
+                      let clickFunction = document.createAttribute("onclick");
+                      clickFunction.value = "getAttachmentFile(this)";
+                      dlnk.setAttributeNode(clickFunction);
+
+                      dlnk.id = "";
+                      dlnk.download = part.filename;
+
+                      dlnk.appendChild(document.createElement("br"));
+                      document.getElementById("mesg").appendChild(dlnk);
+
+                
+
+
+              }
+              
+            }
+            
+        }
+
+       
+      }
+
+
+
+      function getAttachmentFile(e)
+      {
+       let messageId =  e.getAttribute("data-messageId");
+       let mimeType =  e.getAttribute("data-mimeType");
+       let fileName =  e.getAttribute("data-fileName");
+       let attachId =  e.getAttribute("data-attachmentId");
+
+        gapi.client.gmail.users.messages.attachments.get({
+                  'id': attachId,
+                  'messageId': messageId,
+                  'userId': 'me'
+                }).then(function(response)
+                {
+                   
+                    let dataBase64Rep = response.result.data.replace(/-/g, '+').replace(/_/g, '/');
+                    let urlBlob = b64toBlob(dataBase64Rep, mimeType, response.result.size);
+
+                    let dlnk = document.createElement("a");                        
+                    let t = document.createTextNode(fileName);
+                    dlnk.appendChild(t);
+                    dlnk.href = urlBlob;
+                    dlnk.style.display = "none";
+                    dlnk.download = fileName;
+                    dlnk.click();
+                    document.getElementById("mesg").appendChild(dlnk);
+                    console.log(urlBlob);
+
+                });
+      
+      }
+
+
+
+
+      /*function getAttachments(parts,messageId) {
         if(parts)
       {       let partArray = [];
               for (var i = 0; i < parts.length; i++) {  
@@ -233,48 +323,45 @@
                   'userId': 'me'
                 }).then(function(response)
                 {
-                      console.log(response);
+                      //console.log(response);
+                      // console.log(parts.length);
                       //console.log(partArray);
-                      var cleanPartArray = cleanArray(partArray);
-                        
+                    
+                      var cleanPartArray = cleanArray(partArray);  
                       //var link = 'data:' + part.mimeType + ';base64,' + response.result.data.replace(/-/g, '+').replace(/_/g, '/');
                       //$('body').append('<a href="' + link + '" style="display: block">' + part.filename + '</a>');
-                      
-                      for (var x = 0; x < cleanPartArray.length; x++) 
-                      {
-                        var partObject = cleanPartArray[x];
-                        //console.log(partObject);
-                        let dataBase64Rep = response.result.data.replace(/-/g, '+').replace(/_/g, '/');
-                        let urlBlob = b64toBlob(dataBase64Rep, partObject.mimeType, response.result.size);
 
-                        let dlnk = document.createElement("a");                        
-                        let t = document.createTextNode(partObject.filename);
-                        dlnk.appendChild(t);
-                        dlnk.href = urlBlob;
-                        dlnk.download = partObject.filename;
-                        dlnk.appendChild(document.createElement("br"));
-                        document.getElementById("mesg").appendChild(dlnk);
-                     }
+                          
+                             for ( var x = 0; x < cleanPartArray.length; x++) 
+                             {
+                                  var partObject = cleanPartArray[x];
+                                  console.log(partObject);
+                                  let dataBase64Rep = response.result.data.replace(/-/g, '+').replace(/_/g, '/');
+                                  let urlBlob = b64toBlob(dataBase64Rep, partObject.mimeType, response.result.size);
 
-                          //  let dataBase64Rep = response.result.data.replace(/-/g, '+').replace(/_/g, '/')
+                                  let dlnk = document.createElement("a");                        
+                                  let t = document.createTextNode(partObject.filename);
+                                  dlnk.appendChild(t);
+                                  dlnk.href = urlBlob;
+                                  dlnk.download = partObject.filename;
+                                  dlnk.appendChild(document.createElement("br"));
+                                  document.getElementById("mesg").appendChild(dlnk);
+                           
+                             }
+                            
+                        
+                            //console.log(x);
 
-                          //  let urlBlob = b64toBlob(dataBase64Rep, part.mimeType, response.result.size);
-
-                          //  let dlnk = document.getElementById('download-attach');
-                          //   var t = document.createTextNode(part.filename);// Create a text node
-                          //   dlnk.appendChild(t);
-                          //   dlnk.href = urlBlob;
-                          //  dlnk.download = part.filename;      
-                         // dlnk.click();
-                         // URL.revokeObjectURL(urlBlob);
                 });
 
               }
+              
             }
         }
 
        
-      }
+      }*/
+
 
       function cleanArray(actual) {
         var newArray = new Array();
@@ -310,6 +397,7 @@
         let urlBlob = URL.createObjectURL(blob)
         return urlBlob
       }
+
  
      // var link = 'data:' + mimeType + ';base64,' + attachment.data.replace(/-/g, '+').replace(/_/g, '/'); 
       //inline.append('<a href="' + link + '" style="display: block">' + filename + '</a>');
